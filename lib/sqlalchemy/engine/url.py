@@ -707,9 +707,8 @@ def _parse_rfc1738_args(name):
             (?:
                 (?:
                     \[(?P<ipv6host>[^/\?]+)\] |
-                    (?P<ipv4host>[^/:\?]+)
+                    (?P<ipv4host>[^/\?]+)
                 )?
-                (?::(?P<port>[^/\?]*))?
             )?
             (?:/(?P<database>[^\?]*))?
             (?:\?(?P<query>.*))?
@@ -743,11 +742,19 @@ def _parse_rfc1738_args(name):
 
         ipv4host = components.pop("ipv4host")
         ipv6host = components.pop("ipv6host")
-        components["host"] = ipv4host or ipv6host
+        if ipv4host:
+            if ',' in ipv4host:
+                # multiple host
+                components["host"] = ipv4host
+            elif ':' in ipv4host:
+                host, port = ipv4host.split(':', 1)
+                components["host"] = host
+                components["port"] = int(port)
+            else:
+                components["host"] = ipv4host
+        else:
+            components["host"] = ipv6host
         name = components.pop("name")
-
-        if components["port"]:
-            components["port"] = int(components["port"])
 
         return URL.create(name, **components)
 
