@@ -92,6 +92,19 @@ class PGDialect_pyopengauss(PGDialect):
 
     def is_disconnect(self, e, connection, cursor):
         return "connection is closed" in str(e)
+    
+    def _get_server_version_info(self, connection):
+        v = connection.exec_driver_sql("select version()").scalar()
+        m = re.match(
+            r".*(?:openGauss) "
+            r"(\d+)\.?(\d+)?(?:\.(\d+))?(?:\.\d+)?(?:devel|beta)?",
+            v,
+        )
+        if not m:
+            raise AssertionError(
+                "Could not determine version from string '%s'" % v
+            )
+        return tuple([int(x) for x in m.group(1, 2, 3) if x is not None])
 
 
 dialect = PGDialect_pyopengauss
